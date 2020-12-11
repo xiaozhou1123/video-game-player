@@ -1,44 +1,57 @@
-#include <reg52.h>
+#include <reg51.h>
 #include <intrins.h>
+#include "FC.h"
+sbit Clock_1=P1^0;
+sbit Latch_1=P1^1;
+sbit Data_1=P1^2;//手柄一引脚定义
 
-sbit Clock=P0^0;
-sbit Latch=P0^1;
-sbit Data=P0^2;
-
-unsigned char Read_Key(void)
+sbit Clock_2=P1^3;
+sbit Latch_2=P1^4;
+sbit Data_2=P1^5;//手柄二引脚定义
+unsigned char Read_Key_1(void)
 {
-    unsigned char i,FC_Data =0;
-	Data = 0;
-	Clock = 0;
-	Latch = 1;
+    unsigned char i,FC_Data_1 =0;
+	Data_1 = 0;
+	Clock_1 = 0;
+	Latch_1 = 1;
 	_nop_();
 	_nop_();
 	_nop_();		
-	Latch = 0; 
+	Latch_1 = 0; 
 	
 	for(i=0;i<8;i++)
 	{
-	Clock = 0;
+	Clock_1 = 0;
 	_nop_();
-	if(!Data)  //若有键按下
-      FC_Data|=(0x01 << i);
-	Clock = 1;
+	if(!Data_1)  //若有键按下
+      FC_Data_1|=(0x01 << i);
+	Clock_1 = 1;
 	_nop_();	
 	}
 
-	return FC_Data;
+	return FC_Data_1;
+}
+unsigned char Read_Key_2(void)
+{
+    unsigned char i,FC_Data_2 =0;
+	Data_2 = 0;
+	Clock_2 = 0;
+	Latch_2 = 1;
+	_nop_();
+	_nop_();
+	_nop_();		
+	Latch_2 = 0; 
+	
+	for(i=0;i<8;i++)
+	{
+	Clock_2 = 0;
+	_nop_();
+	if(!Data_2)  //若有键按下
+      FC_Data_2|=(0x01 << i);
+	Clock_2 = 1;
+	_nop_();	
+	}
+
+	return FC_Data_2;
 }
 
-void main(void)
-{
-	unsigned char tmp=0;
-	while(1)
-	{
-	tmp=Read_Key();
-	
-	if(tmp)
-	   P3 = ~tmp;
-	else
-	   P3 = 0xff;
-	}
-}
