@@ -531,66 +531,130 @@ void LCD_SetParam(void)
 
 
 
+
 #define BLOCK_W 10
-#define BLOCK_H 8
+#define BLOCK_H 10
+#define MASK 1
 sbit Clock_1=P1^0;
 sbit Latch_1=P1^1;
 sbit Data_1=P1^2;//手柄一引脚定义
-
+u16 code BackGround[]={0,0,0,0,0,0,0,0,8191};
+u8 code form[][4][4]={//[形状][方向][每一行]
+	{{4,14,0,0},{8,12,8,0},{14,4,0,0},{4,12,4,0}},//品
+	{{15,0,0,0},{8, 8,8,8},{15,0,0,0},{8, 8,8,8}}//一
+	};
 sbit Clock_2=P1^3;
 sbit Latch_2=P1^4;
 sbit Data_2=P1^5;//手柄二引脚定义
-u8 x = 0;
-u8 y = 0;//块的坐标  区别于像素的坐标
+u8 x;
+u8 y;//小块的坐标  区别于像素的坐标
+u8 form_x,form_y; //形状的坐标
+u8 number,dir;//
 
-void DrawBlock(u8 dia_x,u8 dia_y){
+void DrawBlock(u8 dia_x,u8 dia_y){ //画一个小方块，左上角为坐标起点
 	u16 x = dia_x*BLOCK_W+1;
 	u16 y = dia_y*BLOCK_H+1;
 	LCD_DrawRectangle(x,y,x+10,y+10,BLACK);
 	LCD_Fill(x+1,y+1,x+10,y+10,GREEN);
 
-} //画一个小方块，左上角为坐标起点
-void CleanBlock(u8 dia_x,u8 dia_y){
+} 
+
+void CleanBlock(u8 dia_x,u8 dia_y){//清除一个小方块
 
 	u16 x = dia_x*BLOCK_W+1;
 	u16 y = dia_y*BLOCK_H+1;
 	LCD_DrawRectangle(x,y,x+10,y+10,WHITE);
 	LCD_Fill(x+1,y+1,x+10,y+10,WHITE);
-}//清除一个小方块
-void Startup(void){
+}
+
+void CleanForm(u8 form_x,u8 form_y){//清理一个形状，输入的是form_x,form_y
+	u16 x = form_x*BLOCK_W+1;
+	u16 y = form_y*BLOCK_H+1;
+	LCD_Fill(x,y,x+41,y+41,WHITE);
+}
+
+void delay(){
+
+	u16 delay = 5000;
+	while(delay--);
+//	delay = 5000;
+//	while(delay--);
+
+}
+void DrawForm(u8 form_num,u8 dir,u8 form_x,u8 form_y){//form_x,form_y为左上角的块坐标,//num块种类，dir方向
+	u8 i,j;
+	for(j=0;j<4;j++){
+		for(i=0;i<4;i++){
+			if(form[form_num][dir][j] & (MASK << (3-i))){
+				DrawBlock(form_x+i,form_y+j);	
+			}
+		}
+	}	
+
+
+}
+u8 Check(){
+if((form[0][dir][3]<<(13-form_x)) | BackGround[form_y+4] == (form[0][dir][3]<<(13-form_x))+BackGround[form_y+4])
+	return 1;
+else 
+	return 0;	
+
+
+}
+void Startup(void){//初始化
 	LCD_Init();
 	LCD_Fill(0,0,176,220,WHITE);
 	LCD_DrawRectangle(0,0,133,219,BLACK);
 	LCD_DrawRectangle(0,0,132,219,BLACK);
-
+//	BackGround[]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,8191};
+	x=0;
+	y=0;
+	form_x = 5;
+	form_y = 0;
+	dir = 0;
 }
-void upDateWithInput(voia){	 //输入更新
+
+
+void upDateWithInput(void){	 //输入更新
 	char i;	          
    	u8 temp = Read_Key_1();
 		for(i = 0;i<8;i++){
 			if(temp & (0x01<<i)){
-				CleanBlock(x,y);
+				CleanForm(form_x,form_y);
 				switch(i){
 					case 4: 
-						if(y>0)
-							y--;
+						if(dir <3)
+							dir++;
+						else 
+							dir = 0;
 						break;
 					case 5:
-						if(y<26) 
-							y++;
+					//	if(form_y<19) 
+					//		form_y++;
 						break;
 					case 6:
-						if(x>0) 
-							x--;
+						if(form_x>0) 
+							form_x--;
 						break;
 					case 7: 
-						if(x<12)
-							x++;
+						if(form_x<9)
+							form_x++;
 						break;
 				 }
-			
 			 }
 		}
+
+
+
+}
+void upDateWithoutInput(void){
+	 if(check()){
+	 	form_y++;
+		CleanForm(form_x,form_y-1);
+	 	}
+	 if(form_y>19){
+	 	form_y = 0;
+	 }
 
 
 
@@ -598,16 +662,21 @@ void upDateWithInput(voia){	 //输入更新
 
 
 void Show(void){
-	 
-	 DrawBlock(x,y);
+
+	 DrawForm(0,dir,form_x,form_y);
+	 delay();
+	 CleanForm(form_x,form_y);
 
 }
 int main (void){
 	Startup();
 	while(1){
 		upDateWithInput();
-		Show();			 
 
+		upDateWithoutInput();
+
+		Show();			 
+		
 
 	
 	
