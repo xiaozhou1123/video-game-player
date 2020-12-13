@@ -538,10 +538,13 @@ void LCD_SetParam(void)
 sbit Clock_1=P1^0;
 sbit Latch_1=P1^1;
 sbit Data_1=P1^2;//ÊÖ±úÒ»Òý½Å¶¨Òå
-u16 code BackGround[]={0,0,0,0,0,0,0,0,8191};
+u16 code BackGround[]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,8191};
 u8 code form[][4][4]={//[ÐÎ×´][·½Ïò][Ã¿Ò»ÐÐ]
-	{{4,14,0,0},{8,12,8,0},{14,4,0,0},{4,12,4,0}},//Æ·
-	{{15,0,0,0},{8, 8,8,8},{15,0,0,0},{8, 8,8,8}}//Ò»
+	{{0,0,4 ,14},{0,8 ,12,8},{0,0, 14,4},{0,4 ,12,4}},//Æ·
+	{{0 ,0,0,15},{8 ,8 ,8,8},{0 ,0,0,15},{8 ,8 ,8,8}},//Ò»
+	{{0,8 ,12,4},{0,0,6 ,12},{0,8 ,12,4},{0,8 ,12,4}},//
+	{{0,0,12,12},{0,0,12,12},{0,0,12,12},{0,0,12,12}},//Ìï
+	{{0,0,15,8 },{12,4 ,4,4},{0,0,1 ,15},{8 ,8 ,8,12}}
 	};
 sbit Clock_2=P1^3;
 sbit Latch_2=P1^4;
@@ -593,11 +596,12 @@ void DrawForm(u8 form_num,u8 dir,u8 form_x,u8 form_y){//form_x,form_yÎª×óÉÏ½ÇµÄ¿
 
 
 }
-u8 Check(){
-if((form[0][dir][3]<<(13-form_x)) | BackGround[form_y+4] == (form[0][dir][3]<<(13-form_x))+BackGround[form_y+4])
-	return 1;
-else 
-	return 0;	
+bit Check(void){ //³åÍ»¼ì²â
+
+	if(((form[number][dir][3]<<(13-form_x)) | BackGround[form_y+4]) == ((form[number][dir][3]<<(13-form_x))+BackGround[form_y+4]))
+		return 1;
+	else 
+		return 0;	
 
 
 }
@@ -612,6 +616,7 @@ void Startup(void){//³õÊ¼»¯
 	form_x = 5;
 	form_y = 0;
 	dir = 0;
+	number = 0;
 }
 
 
@@ -620,7 +625,6 @@ void upDateWithInput(void){	 //ÊäÈë¸üÐÂ
    	u8 temp = Read_Key_1();
 		for(i = 0;i<8;i++){
 			if(temp & (0x01<<i)){
-				CleanForm(form_x,form_y);
 				switch(i){
 					case 4: 
 						if(dir <3)
@@ -628,10 +632,10 @@ void upDateWithInput(void){	 //ÊäÈë¸üÐÂ
 						else 
 							dir = 0;
 						break;
-					case 5:
+					//case 5:
 					//	if(form_y<19) 
 					//		form_y++;
-						break;
+					//	break;
 					case 6:
 						if(form_x>0) 
 							form_x--;
@@ -648,13 +652,12 @@ void upDateWithInput(void){	 //ÊäÈë¸üÐÂ
 
 }
 void upDateWithoutInput(void){
-	 if(check()){
+
+	 if(Check()){
 	 	form_y++;
 		CleanForm(form_x,form_y-1);
 	 	}
-	 if(form_y>19){
-	 	form_y = 0;
-	 }
+	 
 
 
 
@@ -663,9 +666,10 @@ void upDateWithoutInput(void){
 
 void Show(void){
 
-	 DrawForm(0,dir,form_x,form_y);
+	 DrawForm(number,dir,form_x,form_y);
 	 delay();
-	 CleanForm(form_x,form_y);
+	 delay();
+	 //CleanForm(form_x,form_y);
 
 }
 int main (void){
