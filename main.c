@@ -1,9 +1,13 @@
-#include<reg51.h>
+#include <reg51.h>
+#include <stdlib.h>
+//#include <time.h>
 #include "LCD.h"
 #include "sys.h"
 #include "FC.h"
 #include "lcd.h"
- 
+
+
+
 //LCDµÄ»­±ÊÑÕÉ«ºÍ±³¾°É«	   
 u16 POINT_COLOR=0x0000;	//»­±ÊÑÕÉ«
 u16 BACK_COLOR=YELLOW;  //±³¾°É« 
@@ -538,7 +542,7 @@ void LCD_SetParam(void)
 sbit Clock_1=P1^0;
 sbit Latch_1=P1^1;
 sbit Data_1=P1^2;//ÊÖ±úÒ»Òý½Å¶¨Òå
-u16 code BackGround[]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,8191};
+u16  BackGround[]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,63353};
 u8 code form[][4][4]={//[ÐÎ×´][·½Ïò][Ã¿Ò»ÐÐ]
 	{{0,0,4 ,14},{0,8 ,12,8},{0,0, 14,4},{0,4 ,12,4}},//Æ·
 	{{0 ,0,0,15},{8 ,8 ,8,8},{0 ,0,0,15},{8 ,8 ,8,8}},//Ò»
@@ -553,10 +557,11 @@ u8 x;
 u8 y;//Ð¡¿éµÄ×ø±ê  Çø±ðÓÚÏñËØµÄ×ø±ê
 u8 form_x,form_y; //ÐÎ×´µÄ×ø±ê
 u8 number,dir;//
+u8 number_next;
 
 void DrawBlock(u8 dia_x,u8 dia_y){ //»­Ò»¸öÐ¡·½¿é£¬×óÉÏ½ÇÎª×ø±êÆðµã
 	u16 x = dia_x*BLOCK_W+1;
-	u16 y = dia_y*BLOCK_H+1;
+	u16 y = dia_y*BLOCK_H+4;
 	LCD_DrawRectangle(x,y,x+10,y+10,BLACK);
 	LCD_Fill(x+1,y+1,x+10,y+10,GREEN);
 
@@ -565,25 +570,23 @@ void DrawBlock(u8 dia_x,u8 dia_y){ //»­Ò»¸öÐ¡·½¿é£¬×óÉÏ½ÇÎª×ø±êÆðµã
 void CleanBlock(u8 dia_x,u8 dia_y){//Çå³ýÒ»¸öÐ¡·½¿é
 
 	u16 x = dia_x*BLOCK_W+1;
-	u16 y = dia_y*BLOCK_H+1;
+	u16 y = dia_y*BLOCK_H+4;
 	LCD_DrawRectangle(x,y,x+10,y+10,WHITE);
 	LCD_Fill(x+1,y+1,x+10,y+10,WHITE);
 }
 
 void CleanForm(u8 form_x,u8 form_y){//ÇåÀíÒ»¸öÐÎ×´£¬ÊäÈëµÄÊÇform_x,form_y
-	u16 x = form_x*BLOCK_W+1;
-	u16 y = form_y*BLOCK_H+1;
-	LCD_Fill(x,y,x+41,y+41,WHITE);
+	u8 i,j;
+	for(j=0;j<4;j++){
+		for(i=0;i<4;i++){
+			if(form[number][dir][j] & (MASK << (3-i))){
+				CleanBlock(form_x+i,form_y+j);	
+			}
+		}
+	}	
 }
 
-void delay(){
 
-	u16 delay = 5000;
-	while(delay--);
-//	delay = 5000;
-//	while(delay--);
-
-}
 void DrawForm(u8 form_num,u8 dir,u8 form_x,u8 form_y){//form_x,form_yÎª×óÉÏ½ÇµÄ¿é×ø±ê,//num¿éÖÖÀà£¬dir·½Ïò
 	u8 i,j;
 	for(j=0;j<4;j++){
@@ -598,18 +601,26 @@ void DrawForm(u8 form_num,u8 dir,u8 form_x,u8 form_y){//form_x,form_yÎª×óÉÏ½ÇµÄ¿
 }
 bit Check(void){ //³åÍ»¼ì²â
 
-	if(((form[number][dir][3]<<(13-form_x)) | BackGround[form_y+4]) == ((form[number][dir][3]<<(13-form_x))+BackGround[form_y+4]))
+	if(((form[number][dir][3]<<(8-form_x)) | BackGround[form_y+4]) == ((form[number][dir][3]<<(8-form_x))+BackGround[form_y+4]))
 		return 1;
 	else 
 		return 0;	
 
 
 }
+void ProduceRandNewForm(void){
+	srand(number);
+	number_next = rand()%4;
+		 
+
+}
 void Startup(void){//³õÊ¼»¯
+	char *next = "NEXT:";
 	LCD_Init();
 	LCD_Fill(0,0,176,220,WHITE);
 	LCD_DrawRectangle(0,0,133,219,BLACK);
 	LCD_DrawRectangle(0,0,132,219,BLACK);
+	LCD_ShowString(140,10,15,next,1);
 //	BackGround[]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,8191};
 	x=0;
 	y=0;
@@ -617,9 +628,42 @@ void Startup(void){//³õÊ¼»¯
 	form_y = 0;
 	dir = 0;
 	number = 0;
+	ProduceRandNewForm();
+	DrawForm(number_next,dir,14,2);
 }
 
+void Add2Background(void){
+	u8 i;
+	for(i=0;i<4;i++){
+		BackGround[form_y+i] += (form[number][dir][i]<<(8-form_x)); 
+	   }
 
+
+}
+void Checkfull(void){
+	u8 i,j,k;
+	for(i = 0;i < 21; i++){
+		if(BackGround[i] == 1008){
+			BackGround[i] = 0;
+			for(j = i;j > 0 ; j--){
+				BackGround[j] = BackGround[j-1];
+
+			for(k = 0;k < 13;k++){
+				if(BackGround[j]&(MASK<<(11-k)))
+					DrawBlock(k,j);
+				else
+					CleanBlock(k,j); 
+				}
+				
+			}
+			BackGround[0] = 0;	
+			break;
+		}
+	
+	}
+
+
+}
 void upDateWithInput(void){	 //ÊäÈë¸üÐÂ
 	char i;	          
    	u8 temp = Read_Key_1();
@@ -651,40 +695,51 @@ void upDateWithInput(void){	 //ÊäÈë¸üÐÂ
 
 
 }
+
 void upDateWithoutInput(void){
 
-	 if(Check()){
-	 	form_y++;
-		CleanForm(form_x,form_y-1);
+	 if(Check()&&form_y<17){
+	 //	CleanForm(form_x,form_y-1);
+		form_y++;
+		
+		
 	 	}
-	 
+	  else{
+	    
+	  	Add2Background();
+		number = number_next;
+		dir = 0;form_x = 5;form_y = 0; //¿ªÊ¼ÐÂµÄÏÂ½µ
+		ProduceRandNewForm();		   //Éú³ÉÒ»¸öÐÂµÄÐÎ×´
+		LCD_Fill(140,30,175,70 ,WHITE);//Çå³ýnextÇøµÄÍ¼ÐÎ
+		DrawForm(number_next,dir,14,2);//ÏÔÊ¾nextÇøµÄÍ¼ÐÎ
+		Checkfull();							   //¼ì²âÂúÐÐ
 
-
-
+	   }
 }
 
 
 void Show(void){
-
-	 DrawForm(number,dir,form_x,form_y);
-	 delay();
-	 delay();
-	 //CleanForm(form_x,form_y);
+	
+	DrawForm(number,dir,form_x,form_y);
+	
+	if(Check()){
+		CleanForm(form_x,form_y);
+	}
+	 
+	 //delay();
+	 //delay();
 
 }
 int main (void){
 	Startup();
 	while(1){
+		Show();
+		upDateWithoutInput();	
 		upDateWithInput();
+	//	BackGround[19];
+	//	BackGround[20];
+	//	BackGround[21];
 
-		upDateWithoutInput();
-
-		Show();			 
-		
-
-	
-	
-	
 	}
 	return 0;
 }
