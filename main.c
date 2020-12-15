@@ -542,28 +542,29 @@ void LCD_SetParam(void)
 sbit Clock_1=P1^0;
 sbit Latch_1=P1^1;
 sbit Data_1=P1^2;//ÊÖ±úÒ»Òý½Å¶¨Òå
-u16  BackGround[]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,63353};
+u16  BackGround[]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 u8 code form[][4][4]={//[ÐÎ×´][·½Ïò][Ã¿Ò»ÐÐ]
 	{{0,0,4 ,14},{0,8 ,12,8},{0,0, 14,4},{0,4 ,12,4}},//Æ·
 	{{0 ,0,0,15},{8 ,8 ,8,8},{0 ,0,0,15},{8 ,8 ,8,8}},//Ò»
-	{{0,8 ,12,4},{0,0,6 ,12},{0,8 ,12,4},{0,8 ,12,4}},//
+	{{0,8 ,12,4},{0,0,6 ,12},{0,8 ,12,4},{0,8 ,12,4}},//s
 	{{0,0,12,12},{0,0,12,12},{0,0,12,12},{0,0,12,12}},//Ìï
 	{{0,0,15,8 },{12,4 ,4,4},{0,0,1 ,15},{8 ,8 ,8,12}}
 	};
 sbit Clock_2=P1^3;
 sbit Latch_2=P1^4;
 sbit Data_2=P1^5;//ÊÖ±ú¶þÒý½Å¶¨Òå
-u8 x;
-u8 y;//Ð¡¿éµÄ×ø±ê  Çø±ðÓÚÏñËØµÄ×ø±ê
+u8 x,y;//Ð¡¿éµÄ×ø±ê  Çø±ðÓÚÏñËØµÄ×ø±ê
 u8 form_x,form_y; //ÐÎ×´µÄ×ø±ê
 u8 number,dir;//
 u8 number_next;
-
+u8 score = 0;
+u8 FCkey;
+u8 cnt = 0;
 void DrawBlock(u8 dia_x,u8 dia_y){ //»­Ò»¸öÐ¡·½¿é£¬×óÉÏ½ÇÎª×ø±êÆðµã
 	u16 x = dia_x*BLOCK_W+1;
 	u16 y = dia_y*BLOCK_H+4;
-	LCD_DrawRectangle(x,y,x+10,y+10,BLACK);
-	LCD_Fill(x+1,y+1,x+10,y+10,GREEN);
+	LCD_DrawRectangle(x,y,x+9,y+9,BLACK);
+	LCD_Fill(x+1,y+1,x+9,y+9,GREEN);
 
 } 
 
@@ -571,8 +572,8 @@ void CleanBlock(u8 dia_x,u8 dia_y){//Çå³ýÒ»¸öÐ¡·½¿é
 
 	u16 x = dia_x*BLOCK_W+1;
 	u16 y = dia_y*BLOCK_H+4;
-	LCD_DrawRectangle(x,y,x+10,y+10,WHITE);
-	LCD_Fill(x+1,y+1,x+10,y+10,WHITE);
+	LCD_DrawRectangle(x,y,x+9,y+9,WHITE);
+	LCD_Fill(x+1,y+1,x+9,y+9,WHITE);
 }
 
 void CleanForm(u8 form_x,u8 form_y){//ÇåÀíÒ»¸öÐÎ×´£¬ÊäÈëµÄÊÇform_x,form_y
@@ -601,26 +602,75 @@ void DrawForm(u8 form_num,u8 dir,u8 form_x,u8 form_y){//form_x,form_yÎª×óÉÏ½ÇµÄ¿
 }
 bit Check(void){ //³åÍ»¼ì²â
 
-	if(((form[number][dir][3]<<(8-form_x)) | BackGround[form_y+4]) == ((form[number][dir][3]<<(8-form_x))+BackGround[form_y+4]))
-		return 1;
+	if(((form[number][dir][3]<<(11-form_x)) | BackGround[form_y+4]) == ((form[number][dir][3]<<(11-form_x))+BackGround[form_y+4])){
+		if(((form[number][dir][2]<<(11-form_x)) | BackGround[form_y+3]) == ((form[number][dir][2]<<(11-form_x))+BackGround[form_y+3])){
+			if(((form[number][dir][1]<<(11-form_x)) | BackGround[form_y+2]) == ((form[number][dir][1]<<(11-form_x))+BackGround[form_y+2]))
+				return 1;																						  
+			}
+		}
 	else 
 		return 0;	
 
 
 }
 void ProduceRandNewForm(void){
-	srand(number);
+	srand(cnt);
 	number_next = rand()%4;
 		 
 
 }
+
+
+void Add2Background(void){
+	u8 i;
+	for(i=0;i<4;i++){
+		BackGround[form_y+i] += (form[number][dir][i]<<(11-form_x)); 
+	   }
+
+
+}
+void Checkfull(void){
+	u8 i,j,k;
+	for(i = 20;i > 0; i--){
+		if(BackGround[i] == 32764){ //1 1111 1111 1110
+		score ++;
+		LCD_ShowNum(135,95,score,3,15);
+		//	BackGround[i] = 0;
+			for(j = i;j > 0 ; j--){
+				if(BackGround[j]!=0){
+	
+					BackGround[j] = BackGround[j-1];
+		
+					for(k = 0;k < 13;k++){
+						if(BackGround[j]&(MASK<<(14-k)))
+							DrawBlock(k,j);
+						else
+							CleanBlock(k,j); 
+						}					
+					}
+				else{
+				//	BackGround[j] = 0;
+					break;
+				 }
+			}
+		//	BackGround[0] = 0;	
+			break;
+		}
+	
+	}
+
+
+} 
 void Startup(void){//³õÊ¼»¯
 	char *next = "NEXT:";
+	char *score = "SCORE:";
+	LCD_ShowNum(135,95,0,3,15);
 	LCD_Init();
 	LCD_Fill(0,0,176,220,WHITE);
 	LCD_DrawRectangle(0,0,133,219,BLACK);
 	LCD_DrawRectangle(0,0,132,219,BLACK);
 	LCD_ShowString(140,10,15,next,1);
+	LCD_ShowString(135,80,15,score,1);
 //	BackGround[]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,8191};
 	x=0;
 	y=0;
@@ -628,78 +678,60 @@ void Startup(void){//³õÊ¼»¯
 	form_y = 0;
 	dir = 0;
 	number = 0;
+	score = 0;
 	ProduceRandNewForm();
 	DrawForm(number_next,dir,14,2);
 }
-
-void Add2Background(void){
-	u8 i;
-	for(i=0;i<4;i++){
-		BackGround[form_y+i] += (form[number][dir][i]<<(8-form_x)); 
-	   }
-
-
-}
-void Checkfull(void){
-	u8 i,j,k;
-	for(i = 0;i < 21; i++){
-		if(BackGround[i] == 1008){
-			BackGround[i] = 0;
-			for(j = i;j > 0 ; j--){
-				BackGround[j] = BackGround[j-1];
-
-			for(k = 0;k < 13;k++){
-				if(BackGround[j]&(MASK<<(11-k)))
-					DrawBlock(k,j);
-				else
-					CleanBlock(k,j); 
-				}
-				
-			}
-			BackGround[0] = 0;	
-			break;
-		}
-	
-	}
-
-
-}
 void upDateWithInput(void){	 //ÊäÈë¸üÐÂ
 	char i;	          
-   	u8 temp = Read_Key_1();
+   	u8 temp = FCkey;
 		for(i = 0;i<8;i++){
 			if(temp & (0x01<<i)){
 				switch(i){
-					case 4: 
+					case 0:
 						if(dir <3)
 							dir++;
 						else 
 							dir = 0;
+						break;
+					case 4: 
+						//if(dir <3)
+						//	dir++;
+					//	else 
+					//		dir = 0;
 						break;
 					//case 5:
 					//	if(form_y<19) 
 					//		form_y++;
 					//	break;
 					case 6:
+					
 						if(form_x>0) 
 							form_x--;
 						break;
-					case 7: 
-						if(form_x<9)
+					case 7:
+					if ((number==0&&dir==0)||(number==2&&((dir==1)||(dir==3)))){ 
+						if(form_x<10)
 							form_x++;
+						}
+					else if (((number==0||number==2)&&dir==0)||number==3){ 
+						if(form_x<11)
+							form_x++;
+						}
 						break;
+					
 				 }
 			 }
 		}
 
-
+	  FCkey = 0;
 
 }
 
 void upDateWithoutInput(void){
 
 	 if(Check()&&form_y<17){
-	 //	CleanForm(form_x,form_y-1);
+	 	
 		form_y++;
 		
 		
@@ -707,12 +739,19 @@ void upDateWithoutInput(void){
 	  else{
 	    
 	  	Add2Background();
+		if(BackGround[3]!=0){
+			LCD_Fill(30,50,100,100,WHITE);
+
+			while(1);
+		
+		}
 		number = number_next;
 		dir = 0;form_x = 5;form_y = 0; //¿ªÊ¼ÐÂµÄÏÂ½µ
 		ProduceRandNewForm();		   //Éú³ÉÒ»¸öÐÂµÄÐÎ×´
 		LCD_Fill(140,30,175,70 ,WHITE);//Çå³ýnextÇøµÄÍ¼ÐÎ
-		DrawForm(number_next,dir,14,2);//ÏÔÊ¾nextÇøµÄÍ¼ÐÎ
-		Checkfull();							   //¼ì²âÂúÐÐ
+		DrawForm(number_next,0,14,2);//ÏÔÊ¾nextÇøµÄÍ¼ÐÎ
+
+		Checkfull();					//¼ì²âÂúÐÐ²¢Ïû³ý
 
 	   }
 }
@@ -722,7 +761,7 @@ void Show(void){
 	
 	DrawForm(number,dir,form_x,form_y);
 	
-	if(Check()){
+	if(Check()&&form_y<17){
 		CleanForm(form_x,form_y);
 	}
 	 
@@ -731,6 +770,12 @@ void Show(void){
 
 }
 int main (void){
+	TMOD = 0X01;
+	TH0 = (65536-20000)/256;
+	TH1 = (65536-20000)%256;
+	EA = 1;
+	ET0 = 1;
+	TR0 = 1;
 	Startup();
 	while(1){
 		Show();
@@ -739,7 +784,18 @@ int main (void){
 	//	BackGround[19];
 	//	BackGround[20];
 	//	BackGround[21];
-
+		
 	}
 	return 0;
+}
+void T0_time() interrupt 1{
+	TH0 = (65536-20000)/256;
+	TH1 = (65536-20000)%256;
+	FCkey = Read_Key_1();	
+	cnt++;
+	if(cnt==255)
+		cnt=0;
+
+
+
 }
