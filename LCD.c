@@ -1,4 +1,6 @@
 #include "lcd.h"
+#include "LCDfunction.h"
+#include "FONT.h"
 //LCD的画笔颜色和背景色	   
 u16 POINT_COLOR=0x0000;	//画笔颜色
 u16 BACK_COLOR=YELLOW;  //背景色 
