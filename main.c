@@ -26,7 +26,8 @@ void T0_time() interrupt 1{
 	TH0 = (65536-20000)/256;
 	TH1 = (65536-20000)%256;
 	FCkey = Read_Key_1();
-	FCkey_p = Read_Key_1();	
+	FCkey_p1 = Read_Key_1();
+	FCkey_p2 = Read_Key_2();	
 	cnt++;
 	if(cnt==255)
 		cnt=0;
